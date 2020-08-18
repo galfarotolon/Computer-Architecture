@@ -6,7 +6,7 @@ HLT = 0b00000001
 LDI = 0b10000010
 PRN = 0b01000111
 # ADD = 0b10100000
-# MUL = 0b10100010
+MUL = 0b10100010
 # PUSH = 0b01000101
 # POP = 0b01000110
 # CALL = 0b01010000
@@ -21,13 +21,13 @@ class CPU:
         self.pc = 0
         self.reg = [0] * 8
         self.ram = [0] * 256
-        self.stack_pointer = 255
+        # self.stack_pointer = 255
         self.ops = {}
         self.ops[LDI] = self.LDI
         self.ops[PRN] = self.PRN
         self.ops[HLT] = self.HLT
         # self.ops[ADD] = self.ADD
-        # self.ops[MUL] = self.MUL
+        self.ops[MUL] = self.MUL
         # self.ops[PUSH] = self.PUSH
         # self.ops[POP] = self.POP
         # self.ops[CALL] = self.CALL
@@ -44,6 +44,16 @@ class CPU:
         self.ram_read(address)
         self.pc += 2
     
+    def MUL(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+        self.alu('MUL', reg_a, reg_b)
+        self.pc += 3
+
+
+
+
+    
     def HLT(self):
         self.running = False
 
@@ -52,28 +62,40 @@ class CPU:
 
     def ram_write(self, address, value):
         self.reg[address] = value
-
+        
 
     def load(self):
         """Load a program into memory."""
 
         address = 0
 
-        # For now, we've just hardcoded a program:
+        try:
+            with open('examples/' + sys.argv[1]) as f:
+                
+                for line in f:
+                    line = line.strip()
+                    temp = line.split()
+                    
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
+                    if len(temp) == 0:
+                        continue
+                    elif temp[0][0] == '#':
+                        continue
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+                    try:
+                        self.ram[address] = int(temp[0], 2)
+                    except ValueError:
+                        print(f"Invalid number: {temp[0]}")
+                        sys.exit(1)
+
+                    address += 1
+
+        except FileNotFoundError:
+            print(f"Couldn't find file {sys.argv[1]}")
+            sys.exit(1)
+        except IndexError:
+            print("Usage: First enter ls8.py followed by the file name: ls8.py filename")
+            sys.exit(1)
     
 
 
@@ -84,6 +106,8 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         #elif op == "SUB": etc
+        elif op == 'MUL':
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -113,4 +137,3 @@ class CPU:
         while self.running:
             ir = self.ram[self.pc]
             self.ops[ir]()
-
