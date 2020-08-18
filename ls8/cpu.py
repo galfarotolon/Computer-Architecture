@@ -2,12 +2,57 @@
 
 import sys
 
+HLT = 0b00000001
+LDI = 0b10000010
+PRN = 0b01000111
+# ADD = 0b10100000
+# MUL = 0b10100010
+# PUSH = 0b01000101
+# POP = 0b01000110
+# CALL = 0b01010000
+# RET = 0b00010001
+
+
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
-        """Construct a new CPU."""
-        pass
+        self.running = False
+        self.pc = 0
+        self.reg = [0] * 8
+        self.ram = [0] * 256
+        self.stack_pointer = 255
+        self.ops = {}
+        self.ops[LDI] = self.LDI
+        self.ops[PRN] = self.PRN
+        self.ops[HLT] = self.HLT
+        # self.ops[ADD] = self.ADD
+        # self.ops[MUL] = self.MUL
+        # self.ops[PUSH] = self.PUSH
+        # self.ops[POP] = self.POP
+        # self.ops[CALL] = self.CALL
+        # self.ops[RET] = self.RET
+
+    def LDI(self):
+        address = self.ram[self.pc + 1]
+        value = self.ram[self.pc + 2]
+        self.ram_write(address, value)
+        self.pc += 3
+
+    def PRN(self):
+        address = self.ram[self.pc + 1]
+        self.ram_read(address)
+        self.pc += 2
+    
+    def HLT(self):
+        self.running = False
+
+    def ram_read(self, address):
+        print(self.reg[address])
+
+    def ram_write(self, address, value):
+        self.reg[address] = value
+
 
     def load(self):
         """Load a program into memory."""
@@ -29,6 +74,8 @@ class CPU:
         for instruction in program:
             self.ram[address] = instruction
             address += 1
+    
+
 
 
     def alu(self, op, reg_a, reg_b):
@@ -61,5 +108,9 @@ class CPU:
         print()
 
     def run(self):
-        """Run the CPU."""
-        pass
+        self.running = True
+
+        while self.running:
+            ir = self.ram[self.pc]
+            self.ops[ir]()
+
