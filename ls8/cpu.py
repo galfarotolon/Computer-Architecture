@@ -8,9 +8,9 @@ PRN = 0b01000111
 MUL = 0b10100010
 PUSH = 0b01000101
 POP = 0b01000110
-# CALL = 0b01010000
-# RET = 0b00010001
-# ADD = 0b10100000
+CALL = 0b01010000
+RET = 0b00010001
+ADD = 0b10100000
 
 # Stack Pointer
 SP = 7
@@ -32,9 +32,9 @@ class CPU:
         self.ops[MUL] = self.MUL
         self.ops[PUSH] = self.PUSH
         self.ops[POP] = self.POP
-        # self.ops[ADD] = self.ADD
-        # self.ops[CALL] = self.CALL
-        # self.ops[RET] = self.RET
+        self.ops[CALL] = self.CALL
+        self.ops[RET] = self.RET
+        self.ops[ADD] = self.ADD
 
     def LDI(self):
         address = self.ram[self.pc + 1]
@@ -53,6 +53,13 @@ class CPU:
         reg_b = self.ram[self.pc + 2]
         self.alu('MUL', reg_a, reg_b)
         self.pc += 3
+    
+    ## Need the ADD so call.ls8 works since its using the add in its program
+    def ADD(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+        self.alu('ADD', reg_a, reg_b)
+        self.pc += 3
         
     def PUSH(self):
         # pushing the val moves indicator 1 below, or -1
@@ -67,8 +74,6 @@ class CPU:
         self.ram[top_of_stack_addr] = value
         self.pc += 2
         
-        
-
     def POP(self):
     
         # get the register address
@@ -79,7 +84,28 @@ class CPU:
         # as val is being popped, shift the indicator by +1
         self.reg[SP] += 1
         self.pc += 2
-
+        
+    def CALL(self):
+        # Push return address
+        return_address = self.pc + 2
+        self.reg[SP] -= 1
+        self.ram[self.reg[SP]] = return_address
+        
+        # call subroutine
+        reg_num = self.ram[self.pc + 1]
+        self.pc = self.reg[reg_num]
+    
+    def RET(self):
+      
+        # pop the return addr off the stack
+        ret_addr = self.ram[self.reg[SP]]
+        self.reg[SP] += 1
+        
+        #set pc  to it
+        
+        self.pc = ret_addr
+        
+        
     
     def HLT(self):
         self.running = False
@@ -162,15 +188,8 @@ class CPU:
         self.running = True
 
         while self.running:
-            ## Branch table
+             ## Branch table
             ir = self.ram[self.pc]
             self.ops[ir]()
-            
-      
-        # if ir in self.ops:
-        #     self.ops[ir]()
-
-        #     # show error message
-        # else:
-        #     print(f"Unknown expression {ir} at address {self.pc}")
-        #     sys.exit(1)
+        
+  
