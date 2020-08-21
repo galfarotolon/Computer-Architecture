@@ -11,6 +11,10 @@ POP = 0b01000110
 CALL = 0b01010000
 RET = 0b00010001
 ADD = 0b10100000
+CMP = 0b10100111 
+JEQ = 0b01010101 
+JMP = 0b01010100
+JNE = 0b01010110
 
 # Stack Pointer
 SP = 7
@@ -35,7 +39,16 @@ class CPU:
         self.ops[CALL] = self.CALL
         self.ops[RET] = self.RET
         self.ops[ADD] = self.ADD
-
+        self.ops[CMP] = self.CMP
+        self.ops[JEQ] = self.JEQ
+        self.ops[JMP] = self.JMP
+        self.ops[JNE] = self.JNE
+        # Flag
+        # init to 0, if not, change to 1 in alu
+        self.E = 0
+        self.L = 0
+        self.G = 0 
+        
     def LDI(self):
         address = self.ram[self.pc + 1]
         value = self.ram[self.pc + 2]
@@ -105,6 +118,37 @@ class CPU:
         
         self.pc = ret_addr
         
+    def CMP(self):
+        
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+        # print(reg_a)
+        # print(reg_b)
+        self.alu("CMP", reg_a, reg_b)
+        self.pc += 3
+    
+    def JMP(self):
+        reg_num = self.ram[self.pc + 1]
+
+        self.pc = self.reg[reg_num]
+        
+    def JEQ(self):
+    # Jump if equal to 1
+        
+    # If equal (i.e. E) flag is set (true) (i.e 1), jump to the address stored in the given register.
+       if self.E == 1:
+           self.pc = self.reg[self.ram[self.pc + 1]]
+       else:
+           self.pc += 2
+    
+    def JNE(self):
+    # jump if equal to 0
+    
+    # If `E` flag is clear (i.e 0), jump to the address stored in the given register.
+        if self.E == 0:
+            self.pc = self.reg[self.ram[self.pc + 1]]
+        else:
+            self.pc += 2
         
     
     def HLT(self):
@@ -154,6 +198,7 @@ class CPU:
 
 
     def alu(self, op, reg_a, reg_b):
+        
         """ALU operations."""
 
         if op == "ADD":
@@ -161,6 +206,18 @@ class CPU:
         #elif op == "SUB": etc
         elif op == 'MUL':
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == 'CMP':
+            
+            # If they are equal, set the Equal E flag to 1, otherwise set it to 0.
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.E = 1
+            # If registerA is less than registerB, set the Less-than L flag to 1, otherwise set it to 0.
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.L = 1
+            # If registerA is greater than registerB, set the Greater-than G flag to 1, otherwise set it to 0.
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.G = 1
+            
         else:
             raise Exception("Unsupported ALU operation")
 
